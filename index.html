@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VELOOP Rewards — Product Analytics & Data Management Blueprint (Days 1–6)</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-dark: #3730a3;
+      --primary-light: #e0e7ff;
+      --slate-50: #f8fafc;
+      --slate-100: #f1f5f9;
+      --slate-200: #e2e8f0;
+      --slate-300: #cbd5e1;
+      --slate-600: #475569;
+      --slate-700: #334155;
+      --slate-800: #1e293b;
+      --slate-900: #0f172a;
+      --emerald-600: #059669;
+      --amber-600: #d97706;
+      --rose-600: #e11d48;
+      --indigo-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--slate-50); color: var(--slate-800); line-height: 1.5; }
+
+    header {
+      background: var(--indigo-gradient);
+      color: white;
+      padding: 2.5rem 2rem 2rem 2rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    .header-container { max-width: 1400px; margin: 0 auto; }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 9999px;
+      margin-bottom: 0.75rem;
+    }
+    .badge-white { background: rgba(255, 255, 255, 0.2); color: white; }
+    .badge-confirmed { background: #d1fae5; color: #065f46; }
+    .badge-proposed { background: #dbeafe; color: #1e40af; }
+    .badge-verify { background: #fef3c7; color: #92400e; }
+    .badge-critical { background: #fee2e2; color: #991b1b; }
+    .badge-high { background: #ffedd5; color: #9a3412; }
+    .badge-medium { background: #fef9c3; color: #854d0e; }
+
+    h1 { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.025em; margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1.1rem; opacity: 0.9; max-width: 900px; }
+    
+    .disclaimer-banner {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 1rem 1.5rem;
+      margin: 1.5rem 0 0 0;
+      border-radius: 6px;
+      color: #92400e;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    nav.tab-nav {
+      background: white;
+      border-bottom: 1px solid var(--slate-200);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    .nav-container { max-width: 1400px; margin: 0 auto; display: flex; overflow-x: auto; gap: 0.5rem; padding: 0 1.5rem; }
+    .tab-btn {
+      padding: 1rem 1.25rem;
+      border: none;
+      background: none;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--slate-600);
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { color: var(--primary); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+    main { max-width: 1400px; margin: 2rem auto; padding: 0 1.5rem; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--slate-200);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+    .stat-label { font-size: 0.825rem; text-transform: uppercase; font-weight: 700; color: var(--slate-600); letter-spacing: 0.05em; }
+    .stat-value { font-size: 1.85rem; font-weight: 800; color: var(--slate-900); margin: 0.25rem 0; }
+    .stat-desc { font-size: 0.8rem; color: var(--slate-600); }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      border: 1px solid var(--slate-200);
+      padding: 1.75rem;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
+    }
+    .card-title { font-size: 1.3rem; font-weight: 700; color: var(--slate-900); margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; }
+    
+    .filter-bar {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+      align-items: center;
+      background: var(--slate-100);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--slate-300);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .search-box:focus { border-color: var(--primary); }
+    .filter-select {
+      padding: 0.6rem 1rem;
+      border: 1px solid var(--slate-300);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: white;
+      outline: none;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+    th { background: var(--slate-100); padding: 0.75rem 1rem; font-weight: 700; color: var(--slate-700); border-bottom: 2px solid var(--slate-200); }
+    td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--slate-200); vertical-align: top; }
+    tr:hover td { background-color: var(--slate-50); }
+    .table-container { overflow-x: auto; border: 1px solid var(--slate-200); border-radius: 8px; }
+
+    .gaps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+      gap: 1.25rem;
+    }
+    .gap-card {
+      background: white;
+      border-radius: 10px;
+      border: 1px solid var(--slate-200);
+      border-left: 5px solid #ef4444;
+      padding: 1.25rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    }
+    .gap-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+    .gap-id { font-size: 0.75rem; font-weight: 800; color: #dc2626; background: #fee2e2; padding: 0.15rem 0.5rem; border-radius: 4px; }
+    .gap-title { font-weight: 700; font-size: 1.05rem; color: var(--slate-900); }
+    .gap-body { font-size: 0.85rem; color: var(--slate-700); margin-top: 0.5rem; }
+    .gap-meta { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--slate-100); font-size: 0.8rem; color: var(--slate-600); }
+
+    .diagram-box {
+      background: var(--slate-900);
+      color: #38bdf8;
+      padding: 1.5rem;
+      border-radius: 8px;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      white-space: pre;
+      margin: 1rem 0;
+      line-height: 1.4;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 6px;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-outline { background: white; border: 1px solid var(--slate-300); color: var(--slate-700); }
+    .btn-outline:hover { background: var(--slate-100); }
+
+    footer { text-align: center; padding: 3rem 1.5rem; color: var(--slate-600); font-size: 0.875rem; border-top: 1px solid var(--slate-200); background: white; margin-top: 3rem; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-container">
+      <span class="badge badge-white">Internship Task 01 Milestone Deliverable</span>
+      <h1>VELOOP Rewards — Product Analytics & Data Management Blueprint</h1>
+      <p class="subtitle">Complete implementation artifact covering <strong>Days 1 to 6</strong>: Product Ecosystem Review, Source & Evidence Registers, Data Readiness Audit, Coverage Matrix, Top 10 Analytics Gaps, and User & Account Analytics Specification.</p>
+      
+      <div class="disclaimer-banner">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+          <strong>MANDATORY DATA AUTHENTICITY NOTICE:</strong> VELOOP is a developing product ecosystem. All empirical figures and behavioral distributions presented here are derived from the <strong>simulated/synthetic test dataset</strong>. No metric is represented as actual company statistics or actual production performance.
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tab-nav">
+    <div class="nav-container">
+      <button class="tab-btn active" onclick="showTab('exec-summary')">01. Executive Summary</button>
+      <button class="tab-btn" onclick="showTab('days1-2')">02. Days 1–2: Product & Registers</button>
+      <button class="tab-btn" onclick="showTab('days3-4')">03. Days 3–4: Data Readiness & Gaps</button>
+      <button class="tab-btn" onclick="showTab('days5-6')">04. Days 5–6: User Analytics Spec</button>
+      <button class="tab-btn" onclick="showTab('profiling')">05. Simulated Data Profiling</button>
+      <button class="tab-btn" onclick="showTab('downloads')">06. CSV & Spec Exports</button>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- TAB 1: EXECUTIVE SUMMARY -->
+    <section id="exec-summary" class="tab-pane active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Milestone Progress</div>
+          <div class="stat-value" style="color: var(--primary);">Days 1–6</div>
+          <div class="stat-desc">Complete up to User Analytics Spec</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Product Areas Mapped</div>
+          <div class="stat-value">17</div>
+          <div class="stat-desc">Full ecosystem coverage</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Events in Coverage Matrix</div>
+          <div class="stat-value">23</div>
+          <div class="stat-desc">Client, server & business outcomes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Critical Gaps Identified</div>
+          <div class="stat-value" style="color: var(--rose-600);">10</div>
+          <div class="stat-desc">Pre-production engineering blockers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">User Spec Fields</div>
+          <div class="stat-value">30</div>
+          <div class="stat-desc">Privacy-safe attributes defined</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Executive Summary Overview (Days 1 to 6)</div>
+        <p style="margin-bottom: 1rem;">VELOOP Rewards is actively architecting its product analytics foundation prior to initiating scaled user acquisition. Because historical production event volumes do not yet exist, this project establishes the <strong>traceable, reproducible, and privacy-governed structure</strong> required for enterprise decision-making.</p>
+        
+        <h3 style="margin: 1.25rem 0 0.5rem 0;">Key Discoveries Across Sprints 1 to 6:</h3>
+        <ul style="margin-left: 1.5rem; margin-bottom: 1rem; font-size: 0.95rem;">
+          <li><strong>The Telemetry Ingestion Gap:</strong> While simulated logs contain 35,704 interaction events across 15 gamified features, they contain <strong>zero records</strong> for user registration, login, onboarding, or cashout withdrawals. Financial and identity lifecycles currently operate in unlinked silos.</li>
+          <li><strong>Exchange Center Conversion Blind Spot:</strong> Across 720 synthetic users who generated 1,690 exchange view events, there are <strong>zero completed swaps</strong>, highlighting an unmonitored drop-off or incomplete release.</li>
+          <li><strong>Need for Four Core Identifiers:</strong> Distributed mobile networks trigger retries that duplicate events without a client-side <code>event_id</code> idempotency key. Balance accounts require double-entry <code>transaction_id</code> ledgers to survive reward clawbacks.</li>
+        </ul>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <a href="docs/01_EXECUTIVE_SUMMARY_DAY_1_TO_6.md" class="btn btn-primary" target="_blank">Read Full Executive Summary Report (MD)</a>
+          <a href="docs/04_DAYS_5_6_USER_ANALYTICS_SPEC.md" class="btn btn-outline" target="_blank">View User Analytics Spec</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: DAYS 1-2 REGISTERS -->
+    <section id="days1-2" class="tab-pane">
+      <div class="card">
+        <div class="card-title">
+          <span>Source & Verification Register (Section 6)</span>
+          <span style="font-size: 0.85rem; font-weight: normal; color: var(--slate-600);">20 Verified Facts & Claims</span>
+        </div>
+        <p style="margin-bottom: 1rem; font-size: 0.9rem;">To enforce strict evidence discipline, every product fact is classified into Confirmed, Proposed, or To Be Verified. Assumptions are never silently converted to facts.</p>
+        
+        <div class="filter-bar">
+          <input type="text" id="svr-search" class="search-box" placeholder="Search Source Register..." onkeyup="filterSVR()">
+          <select id="svr-status-filter" class="filter-select" onchange="filterSVR()">
+            <option value="">All Statuses</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Proposed">Proposed</option>
+            <option value="To Be Verified">To Be Verified</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table id="svr-table">
+            <thead>
+              <tr>
+                <th>Ref ID</th>
+                <th>Information (What was found)</th>
+                <th>Source</th>
+                <th>Source Type</th>
+                <th>Status</th>
+                <th>Notes & Limitations</th>
+              </tr>
+            </thead>
+            <tbody id="svr-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Assumption & Verification Register (Work Package S / Section 25)</span>
+          <span style="font-size: 0.85rem; font-weight: normal; color: var(--slate-600);">15 Critical Unknowns</span>
+        </div>
+        <p style="margin-bottom: 1rem; font-size: 0.9rem;">Whenever implementation details are unconfirmed, they are registered below to assign engineering owners and mitigate operational risk.</p>
+
+        <div class="table-container">
+          <table id="avr-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Unknown (Question)</th>
+                <th>Why It Matters</th>
+                <th>Source Checked</th>
+                <th>Risk</th>
+                <th>Owner</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="avr-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: DAYS 3-4 DATA READINESS & GAPS -->
+    <section id="days3-4" class="tab-pane">
+      <div class="card">
+        <div class="card-title">The Analytical Triad Architecture (A3)</div>
+        <p style="font-size: 0.9rem; margin-bottom: 1rem;">To prevent false metric inflation, client UI clicks must never be conflated with backend system validation or completed financial outcomes:</p>
+        <div class="diagram-box">
+┌─────────────────────────────────┐
+│           USER EVENT            │  Direct client-side gesture (e.g. click 'Watch Ad', submit form)
+│    (Client Telemetry Layer)     │  Cannot be used directly for revenue or financial calculations.
+└────────────────┬────────────────┘
+                 │ Triggers
+                 ▼
+┌─────────────────────────────────┐
+│          SYSTEM EVENT           │  Server verification / third-party S2S callback (e.g. Ad callback received)
+│    (Backend & Service Layer)    │  Confirms technical validity and anti-cheat passing.
+└────────────────┬────────────────┘
+                 │ Produces
+                 ▼
+┌─────────────────────────────────┐
+│        BUSINESS OUTCOME         │  Legal / Financial state change (e.g. double-entry ledger balance credited)
+│      (Enterprise Metrics)       │  Auditable, definitive source of truth for business reporting.
+└─────────────────────────────────┘</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>Data Coverage Matrix (Work Package A4)</span>
+          <span style="font-size: 0.85rem; font-weight: normal; color: var(--slate-600);">23 Core Measurable Events</span>
+        </div>
+        
+        <div class="filter-bar">
+          <input type="text" id="dcm-search" class="search-box" placeholder="Search Coverage Matrix..." onkeyup="filterDCM()">
+          <select id="dcm-priority-filter" class="filter-select" onchange="filterDCM()">
+            <option value="">All Priorities</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table id="dcm-table">
+            <thead>
+              <tr>
+                <th>Product Area</th>
+                <th>User Action</th>
+                <th>System Action</th>
+                <th>Business Outcome</th>
+                <th>Proposed Event</th>
+                <th>Source</th>
+                <th>Priority</th>
+              </tr>
+            </thead>
+            <tbody id="dcm-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Top 10 Critical Analytics Gaps (Affecting Production Reporting)</div>
+        <p style="font-size: 0.9rem; margin-bottom: 1.25rem;">Discovered through comparative evaluation of product requirements against simulated datasets:</p>
+        <div id="gaps-container" class="gaps-grid"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: DAYS 5-6 USER ANALYTICS SPEC -->
+    <section id="days5-6" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Foundational Identity Architecture (B1)</div>
+        <p style="font-size: 0.9rem; margin-bottom: 1rem;">VELOOP requires four distinct identifiers to support distributed analytics, network retry deduplication, and financial auditability:</p>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+          <div style="background: var(--slate-100); padding: 1.25rem; border-radius: 8px;">
+            <div style="font-weight: 700; color: var(--primary);">1. Stable User ID (user_id)</div>
+            <div style="font-size: 0.85rem; color: var(--slate-700); margin-top: 0.5rem;">Immutable UUIDv4 or structured key (e.g. <code>VLUSR000001</code>). Stitches cross-device activity and insulates analytics from email or profile edits.</div>
+          </div>
+          <div style="background: var(--slate-100); padding: 1.25rem; border-radius: 8px;">
+            <div style="font-weight: 700; color: var(--emerald-600);">2. Event ID (event_id)</div>
+            <div style="font-size: 0.85rem; color: var(--slate-700); margin-top: 0.5rem;">Client-generated UUIDv4 embedded in every payload. Acts as an idempotency key at ingestion to discard duplicate network retries.</div>
+          </div>
+          <div style="background: var(--slate-100); padding: 1.25rem; border-radius: 8px;">
+            <div style="font-weight: 700; color: var(--amber-600);">3. Session ID (session_id)</div>
+            <div style="font-size: 0.85rem; color: var(--slate-700); margin-top: 0.5rem;">Alphanumeric token renewed after 30 minutes of client inactivity. Measures session duration, bounce rates, and navigation paths.</div>
+          </div>
+          <div style="background: var(--slate-100); padding: 1.25rem; border-radius: 8px;">
+            <div style="font-weight: 700; color: var(--rose-600);">4. Transaction ID (transaction_id)</div>
+            <div style="font-size: 0.85rem; color: var(--slate-700); margin-top: 0.5rem;">Immutable ledger reference for every balance mutation. Guarantees double-entry auditability, anti-double-spend, and clean clawbacks.</div>
+          </div>
+        </div>
+
+        <div class="card-title">User Lifecycle State Machine Architecture</div>
+        <div class="diagram-box">
+  [Created] ──► [Pending Verification] ──► [Active] ◄──► [Inactive / Dormant]
+     │                                        │                   │
+     │                                        ▼                   ▼
+     └──► [Suspended (Fraud/Policy)] ◄────────┴──────────────► [Churned (60d)]
+                     │                                            │
+                     └────────────────► [Deleted / Anonymized] ◄──┘</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">
+          <span>User Analytics Specification Table (Work Package B2)</span>
+          <span style="font-size: 0.85rem; font-weight: normal; color: var(--slate-600);">30 Production Fields</span>
+        </div>
+        <p style="font-size: 0.9rem; margin-bottom: 1rem;">Defines all required user-level analytical attributes while strictly enforcing personal data minimization (no plaintext passwords, API keys, or financial secrets).</p>
+
+        <div class="filter-bar">
+          <input type="text" id="uas-search" class="search-box" placeholder="Search User Analytics Fields..." onkeyup="filterUAS()">
+          <select id="uas-req-filter" class="filter-select" onchange="filterUAS()">
+            <option value="">All Requirements</option>
+            <option value="Yes">Required (Yes)</option>
+            <option value="No">Optional (No)</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table id="uas-table">
+            <thead>
+              <tr>
+                <th>Field Name</th>
+                <th>Data Type</th>
+                <th>Required?</th>
+                <th>Purpose</th>
+                <th>Source</th>
+                <th>Validation Rule</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="uas-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: SIMULATED DATA PROFILING -->
+    <section id="profiling" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Simulated Working Dataset Profile</div>
+        <p style="font-size: 0.9rem; margin-bottom: 1rem;">Profiled directly from <code>VELOOP_Simulated_User_Behavior_1000.xlsx</code> and <code>VELoop_Rewards_Data_01.xlsx</code>:</p>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Simulated Users</div>
+            <div class="stat-value">1,000</div>
+            <div class="stat-desc">56.8% Active, 28.3% Inactive, 7.7% Suspended</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Sessions</div>
+            <div class="stat-value">7,913</div>
+            <div class="stat-desc">Avg ~7.9 sessions per synthetic user</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Granular Events</div>
+            <div class="stat-value">35,704</div>
+            <div class="stat-desc">Across 15 gamified features</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Task Activities</div>
+            <div class="stat-value">9,846</div>
+            <div class="stat-desc">Completed, failed, and abandoned</div>
+          </div>
+        </div>
+
+        <h3 style="margin: 1.5rem 0 0.75rem 0;">Messy Data Quality Audit Findings (Users_Messy_Audit)</h3>
+        <ul style="margin-left: 1.5rem; font-size: 0.9rem; line-height: 1.6;">
+          <li><strong>Duplicate User Records:</strong> 8 pairs of duplicate <code>user_id</code> keys detected (e.g. <code>VLUSR000095</code>, <code>VLUSR000217</code>, <code>VLUSR000272</code>).</li>
+          <li><strong>Malformed Datetime Formats:</strong> String and unparsed float values in <code>registration_datetime</code> causing parser exceptions.</li>
+          <li><strong>Gating Failure:</strong> Unverified accounts (<code>email_verification_status = 'Pending'</code>) recorded with active engagement sessions.</li>
+          <li><strong>Missing Geolocation:</strong> Null values in <code>city</code> and trailing spaces in device strings.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- TAB 6: DOWNLOADS & EXPORTS -->
+    <section id="downloads" class="tab-pane">
+      <div class="card">
+        <div class="card-title">Project Exports & Download Center</div>
+        <p style="font-size: 0.9rem; margin-bottom: 1.5rem;">All registers, specifications, and coverage matrices are available in machine-readable CSV, JSON, and Markdown formats:</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+          <div style="border: 1px solid var(--slate-200); padding: 1.25rem; border-radius: 8px;">
+            <h4 style="font-size: 1rem; color: var(--slate-900);">Source & Verification Register</h4>
+            <p style="font-size: 0.85rem; color: var(--slate-600); margin: 0.5rem 0 1rem 0;">20 verified claims classified into Confirmed, Proposed, and To Be Verified.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="data/exports/source_and_verification_register.csv" class="btn btn-outline" download>Download CSV</a>
+              <a href="specs/source_and_verification_register.json" class="btn btn-outline" download>Download JSON</a>
+            </div>
+          </div>
+
+          <div style="border: 1px solid var(--slate-200); padding: 1.25rem; border-radius: 8px;">
+            <h4 style="font-size: 1rem; color: var(--slate-900);">Assumption & Verification Register</h4>
+            <p style="font-size: 0.85rem; color: var(--slate-600); margin: 0.5rem 0 1rem 0;">15 critical operational unknowns with risk scores and verification owners.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="data/exports/assumption_register.csv" class="btn btn-outline" download>Download CSV</a>
+              <a href="specs/assumption_register.json" class="btn btn-outline" download>Download JSON</a>
+            </div>
+          </div>
+
+          <div style="border: 1px solid var(--slate-200); padding: 1.25rem; border-radius: 8px;">
+            <h4 style="font-size: 1rem; color: var(--slate-900);">Data Coverage Matrix</h4>
+            <p style="font-size: 0.85rem; color: var(--slate-600); margin: 0.5rem 0 1rem 0;">23 core event mappings across 17 product areas.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="data/exports/data_coverage_matrix.csv" class="btn btn-outline" download>Download CSV</a>
+              <a href="specs/event_data_coverage_matrix.json" class="btn btn-outline" download>Download JSON</a>
+            </div>
+          </div>
+
+          <div style="border: 1px solid var(--slate-200); padding: 1.25rem; border-radius: 8px;">
+            <h4 style="font-size: 1rem; color: var(--slate-900);">Top 10 Analytics Gaps</h4>
+            <p style="font-size: 0.85rem; color: var(--slate-600); margin: 0.5rem 0 1rem 0;">Critical telemetry and architectural gaps with engineering remediation.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="data/exports/top_10_analytics_gaps.csv" class="btn btn-outline" download>Download CSV</a>
+              <a href="specs/top_10_analytics_gaps.json" class="btn btn-outline" download>Download JSON</a>
+            </div>
+          </div>
+
+          <div style="border: 1px solid var(--slate-200); padding: 1.25rem; border-radius: 8px;">
+            <h4 style="font-size: 1rem; color: var(--slate-900);">User Analytics Specification</h4>
+            <p style="font-size: 0.85rem; color: var(--slate-600); margin: 0.5rem 0 1rem 0;">30 user attributes with validation rules, sources, and privacy compliance.</p>
+            <div style="display: flex; gap: 0.5rem;">
+              <a href="data/exports/user_analytics_specification.csv" class="btn btn-outline" download>Download CSV</a>
+              <a href="specs/user_analytics_spec.json" class="btn btn-outline" download>Download JSON</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <p><strong>VELOOP Rewards Data Analyst Internship — Task 01 Blueprint (Days 1–6)</strong></p>
+    <p style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--slate-600);">Designed and built with full compliance to Data Authenticity Policy & Non-Negotiable Integrity Rules.</p>
+  </footer>
+
+  <script>
+    // Tab switching
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.currentTarget.classList.add('active');
+    }
+
+    // Load data from specs JSON
+    let svrData = [], avrData = [], dcmData = [], gapsData = [], uasData = [];
+
+    async function loadData() {
+      try {
+        const [r1, r2, r3, r4, r5] = await Promise.all([
+          fetch('specs/source_and_verification_register.json'),
+          fetch('specs/assumption_register.json'),
+          fetch('specs/event_data_coverage_matrix.json'),
+          fetch('specs/top_10_analytics_gaps.json'),
+          fetch('specs/user_analytics_spec.json')
+        ]);
+        svrData = await r1.json();
+        avrData = await r2.json();
+        dcmData = await r3.json();
+        gapsData = await r4.json();
+        uasData = await r5.json();
+        
+        renderSVR();
+        renderAVR();
+        renderDCM();
+        renderGaps();
+        renderUAS();
+      } catch (e) {
+        console.error('Error fetching data specs:', e);
+      }
+    }
+
+    function renderSVR() {
+      const tbody = document.getElementById('svr-tbody');
+      tbody.innerHTML = svrData.map(d => `
+        <tr>
+          <td><strong>${d.Ref_ID}</strong></td>
+          <td>${d.Information}</td>
+          <td>${d.Source}</td>
+          <td>${d.Source_Type}</td>
+          <td><span class="badge ${d.Status === 'Confirmed' ? 'badge-confirmed' : d.Status === 'Proposed' ? 'badge-proposed' : 'badge-verify'}">${d.Status}</span></td>
+          <td style="font-size: 0.8rem; color: var(--slate-600);">${d.Notes}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAVR() {
+      const tbody = document.getElementById('avr-tbody');
+      tbody.innerHTML = avrData.map(d => `
+        <tr>
+          <td><strong>${d.ID}</strong></td>
+          <td>${d.Unknown}</td>
+          <td>${d.Why_It_Matters}</td>
+          <td>${d.Source_Checked}</td>
+          <td><span class="badge ${d.Risk === 'Critical' ? 'badge-critical' : d.Risk === 'High' ? 'badge-high' : 'badge-medium'}">${d.Risk}</span></td>
+          <td><strong>${d.Verification_Owner}</strong></td>
+          <td><span class="badge ${d.Status.includes('Verified') ? 'badge-verify' : 'badge-proposed'}">${d.Status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderDCM() {
+      const tbody = document.getElementById('dcm-tbody');
+      tbody.innerHTML = dcmData.map(d => `
+        <tr>
+          <td><strong>${d.Product_Area}</strong></td>
+          <td>${d.User_Action}</td>
+          <td>${d.System_Action}</td>
+          <td>${d.Business_Outcome}</td>
+          <td><code>${d.Proposed_Event}</code></td>
+          <td>${d.Source}</td>
+          <td><span class="badge ${d.Priority === 'Critical' ? 'badge-critical' : d.Priority === 'High' ? 'badge-high' : 'badge-medium'}">${d.Priority}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function renderGaps() {
+      const container = document.getElementById('gaps-container');
+      container.innerHTML = gapsData.map(d => `
+        <div class="gap-card">
+          <div class="gap-header">
+            <span class="gap-id">${d.Gap_ID}</span>
+            <span class="badge badge-critical">${d.Severity}</span>
+          </div>
+          <div class="gap-title">${d.Title}</div>
+          <div class="gap-body">
+            <strong>Impact:</strong> ${d.Analytical_Impact}
+          </div>
+          <div class="gap-meta">
+            <strong>Remediation:</strong> ${d.Remediation}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderUAS() {
+      const tbody = document.getElementById('uas-tbody');
+      tbody.innerHTML = uasData.map(d => `
+        <tr>
+          <td><code>${d.Field_Name}</code></td>
+          <td>${d.Data_Type}</td>
+          <td><strong>${d.Required}</strong></td>
+          <td>${d.Purpose}</td>
+          <td>${d.Source}</td>
+          <td><code style="font-size: 0.75rem;">${d.Validation_Rule}</code></td>
+          <td><span class="badge ${d.Status === 'Confirmed' ? 'badge-confirmed' : 'badge-proposed'}">${d.Status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // Filter functions
+    function filterSVR() {
+      const q = document.getElementById('svr-search').value.toLowerCase();
+      const status = document.getElementById('svr-status-filter').value;
+      const filtered = svrData.filter(d => 
+        (d.Information.toLowerCase().includes(q) || d.Ref_ID.toLowerCase().includes(q) || d.Source.toLowerCase().includes(q)) &&
+        (!status || d.Status === status)
+      );
+      document.getElementById('svr-tbody').innerHTML = filtered.map(d => `
+        <tr>
+          <td><strong>${d.Ref_ID}</strong></td>
+          <td>${d.Information}</td>
+          <td>${d.Source}</td>
+          <td>${d.Source_Type}</td>
+          <td><span class="badge ${d.Status === 'Confirmed' ? 'badge-confirmed' : d.Status === 'Proposed' ? 'badge-proposed' : 'badge-verify'}">${d.Status}</span></td>
+          <td style="font-size: 0.8rem; color: var(--slate-600);">${d.Notes}</td>
+        </tr>
+      `).join('');
+    }
+
+    function filterDCM() {
+      const q = document.getElementById('dcm-search').value.toLowerCase();
+      const prio = document.getElementById('dcm-priority-filter').value;
+      const filtered = dcmData.filter(d => 
+        (d.Product_Area.toLowerCase().includes(q) || d.User_Action.toLowerCase().includes(q) || d.Proposed_Event.toLowerCase().includes(q)) &&
+        (!prio || d.Priority === prio)
+      );
+      document.getElementById('dcm-tbody').innerHTML = filtered.map(d => `
+        <tr>
+          <td><strong>${d.Product_Area}</strong></td>
+          <td>${d.User_Action}</td>
+          <td>${d.System_Action}</td>
+          <td>${d.Business_Outcome}</td>
+          <td><code>${d.Proposed_Event}</code></td>
+          <td>${d.Source}</td>
+          <td><span class="badge ${d.Priority === 'Critical' ? 'badge-critical' : d.Priority === 'High' ? 'badge-high' : 'badge-medium'}">${d.Priority}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    function filterUAS() {
+      const q = document.getElementById('uas-search').value.toLowerCase();
+      const req = document.getElementById('uas-req-filter').value;
+      const filtered = uasData.filter(d => 
+        (d.Field_Name.toLowerCase().includes(q) || d.Purpose.toLowerCase().includes(q)) &&
+        (!req || d.Required === req)
+      );
+      document.getElementById('uas-tbody').innerHTML = filtered.map(d => `
+        <tr>
+          <td><code>${d.Field_Name}</code></td>
+          <td>${d.Data_Type}</td>
+          <td><strong>${d.Required}</strong></td>
+          <td>${d.Purpose}</td>
+          <td>${d.Source}</td>
+          <td><code style="font-size: 0.75rem;">${d.Validation_Rule}</code></td>
+          <td><span class="badge ${d.Status === 'Confirmed' ? 'badge-confirmed' : 'badge-proposed'}">${d.Status}</span></td>
+        </tr>
+      `).join('');
+    }
+
+    window.onload = loadData;
+  </script>
+</body>
+</html>
